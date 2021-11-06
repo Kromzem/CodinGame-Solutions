@@ -1,0 +1,1 @@
+Here you can check out my solutions for codingame.com, use at your own risk :3
