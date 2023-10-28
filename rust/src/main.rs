@@ -2,3 +2,4 @@ mod retro_typewriter_art;
 mod the_travelling_salesman_problem;;
 mod ascii_art_the_drunken_bishop_algorithm;
 mod one_D_spreadsheet;
+mod logic_gates;
