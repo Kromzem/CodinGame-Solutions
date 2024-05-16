@@ -6,4 +6,5 @@ mod ghost_legs;
 mod logic_gates;
 mod one_D_spreadsheet;
 mod retro_typewriter_art;
+pub mod six_degrees_of_kevin_bacon;
 mod the_travelling_salesman_problem;
