@@ -1,4 +1,4 @@
-use std::{borrow::Borrow, io};
+use std::{borrow::Borrow, default, io, iter::repeat};
 
 macro_rules! parse_input {
     ($x:expr, $t:ident) => {
@@ -13,10 +13,12 @@ macro_rules! parse_input {
 fn main() {
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
-    let player_idx = parse_input!(input_line, i32);
+    let player_idx = parse_input!(input_line, usize);
     let mut input_line = String::new();
     io::stdin().read_line(&mut input_line).unwrap();
-    let nb_games = parse_input!(input_line, i32);
+    let nb_games = parse_input!(input_line, usize);
+
+    let mut games = Vec::with_capacity(4);
 
     // game loop
     loop {
@@ -30,50 +32,129 @@ fn main() {
             io::stdin().read_line(&mut input_line).unwrap();
             let inputs = input_line.split(" ").collect::<Vec<_>>();
             let gpu = inputs[0].trim().to_string();
-            let reg_0 = parse_input!(inputs[1], usize);
-            let reg_1 = parse_input!(inputs[2], i32);
-            let reg_2 = parse_input!(inputs[3], i32);
-            let reg_3 = parse_input!(inputs[4], i32);
-            let reg_4 = parse_input!(inputs[5], i32);
-            let reg_5 = parse_input!(inputs[6], i32);
-            let reg_6 = parse_input!(inputs[7], i32);
+
+            let registers: Vec<usize> = (1..8).map(|i| parse_input!(inputs[i], usize)).collect();
+
+            if games.len() < nb_games {
+                games.push(Game::default());
+            }
 
             if gpu == "GAME_OVER" {
-                println!("LEFT");
+                games[i].is_over = true;
                 continue;
             }
 
-            let next_hurdle = gpu
-                .chars()
-                .enumerate()
-                .skip(reg_0)
-                .filter_map(|(i, c)| match c {
-                    '#' => Some(i),
-                    _ => None,
-                })
-                .nth(0);
-
-            let command = if let Some(pos) = next_hurdle {
-                let dist = pos - reg_0;
-                eprintln!("{} - {} = {}", pos, reg_0, dist);
-
-                if dist == 1 {
-                    "UP"
-                } else if dist == 2 {
-                    "LEFT"
-                } else if dist == 3 {
-                    "DOWN"
-                } else {
-                    "RIGHT"
-                }
-            } else {
-                "RIGHT"
-            };
-
-            println!("{}", command);
+            games[i].set_hurdles(&gpu);
+            games[i].pos = registers[player_idx];
+            games[i].stunned = registers[player_idx + 3] > 0;
         }
 
+        println!("{}", calc_move(&games));
         // Write an action using println!("message...");
         // To debug: eprintln!("Debug message...");
+    }
+}
+
+fn calc_move(games: &Vec<Game>) -> String {
+    let commands: Vec<(usize, Command)> = games
+        .iter()
+        .filter(|g| !g.stunned)
+        .map(|g| (g.pos, g.calc_next_move()))
+        .collect();
+
+    if commands.is_empty() {
+        return Command::Left.get_string();
+    }
+
+    if commands.iter().any(|(_, c)| matches!(c, Command::Up)) {
+        return Command::Up.get_string();
+    }
+
+    return commands
+        .iter()
+        .max_by_key(|(p, _)| p)
+        .unwrap()
+        .1
+        .get_string();
+}
+
+#[derive(Default)]
+struct Game {
+    pos: usize,
+    hurdles: Vec<usize>,
+    is_over: bool,
+    stunned: bool,
+}
+
+impl Game {
+    fn set_hurdles(&mut self, field: &str) {
+        self.hurdles = field
+            .chars()
+            .enumerate()
+            .filter_map(|(i, c)| match c {
+                '#' => Some(i),
+                _ => None,
+            })
+            .collect();
+    }
+
+    fn calc_next_move(&self) -> Command {
+        let next_hurdle = self.hurdles.iter().filter(|&&p| p > self.pos).nth(0);
+
+        let dist = match next_hurdle {
+            Some(pos) => pos - self.pos,
+            None => 0,
+        };
+
+        Command::for_dist(dist)
+    }
+}
+
+enum Command {
+    Up,
+    Down,
+    Right,
+    Left,
+}
+
+impl Command {
+    fn distance(&self) -> usize {
+        match self {
+            Command::Up => 2,
+            Command::Down => 2,
+            Command::Right => 3,
+            Command::Left => 1,
+        }
+    }
+
+    pub fn for_dist(dist: usize) -> Command {
+        if dist == 1 {
+            Command::Up
+        } else if dist == 2 {
+            Command::Left
+        } else if dist == 3 {
+            Command::Down
+        } else {
+            Command::Right
+        }
+    }
+
+    pub fn to_dist(&self) -> usize {
+        match self {
+            Command::Up => 2,
+            Command::Down => 2,
+            Command::Right => 3,
+            Command::Left => 1,
+        }
+    }
+
+    fn get_string(&self) -> String {
+        match self {
+            Command::Up => "UP",
+            Command::Down => "DOWN",
+            Command::Right => "RIGHT",
+            Command::Left => "LEFT",
+        }
+        .to_string()
     }
 }
