@@ -10,3 +10,4 @@ mod retro_typewriter_art;
 pub mod six_degrees_of_kevin_bacon;
 mod summer_challenge_2024;
 mod the_travelling_salesman_problem;
+mod what_the_brainfuck;
